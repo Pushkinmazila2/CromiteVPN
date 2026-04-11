@@ -11,6 +11,9 @@ on:
         description: 'Package suffix (random if empty)'
         required: false
         default: ''
+  push:
+    paths:
+      - '.github/workflows/build_xray-core.yml'
 
 jobs:
   build-xray:
@@ -88,3 +91,15 @@ jobs:
           name: xraymobile-aar
           path: xray-bridge/xraymobile.aar
           retention-days: 7
+      
+      - name: Send Telegram notification
+        uses: appleboy/telegram-action@master
+        if: always() # Отправлять уведомление в любом случае (успех или провал)
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            Статус Action: ${{ job.status }}
+            Репозиторий: ${{ github.repository }}
+            Автор: ${{ github.actor }}
+            Подробнее: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}
