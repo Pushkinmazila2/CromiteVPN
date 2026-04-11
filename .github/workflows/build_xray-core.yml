@@ -46,43 +46,35 @@ jobs:
             -v "$(pwd)/xray-bridge:/build" \
             -e PACKAGE_NAME="${{ steps.identity.outputs.package }}" \
             xray-builder:latest \
-            bash -c "
-            set -e
+            bash -c '
+              set -e
 
-            echo '=== go mod tidy ===' &&
-            go mod tidy &&
+              echo "=== go mod tidy ===" &&
+              go mod tidy &&
 
-            echo '=== add mobile explicitly ===' &&
-            go get golang.org/x/mobile/bind &&
-            go get golang.org/x/mobile/cmd/gomobile &&
+              echo "=== add mobile explicitly ===" &&
+              go get golang.org/x/mobile/bind &&
+              go get golang.org/x/mobile/cmd/gomobile &&
 
-            echo '=== unpack mobile sources ===' &&
-            MOBILE_VER=\$(go list -m -json all | python3 -c "
-            import sys,json
-            for line in sys.stdin.read().split('\n}\n'):
-                try:
-                    m=json.loads(line+'}')
-                    if m.get('Path')=='golang.org/x/mobile':
-                        print(m['Version'])
-                        break
-                except: pass
-            ") &&
-            echo \"mobile version: \$MOBILE_VER\" &&
-            mkdir -p \$GOPATH/src/golang.org/x &&
-            cp -r \$GOPATH/pkg/mod/golang.org/x/mobile@\${MOBILE_VER} \$GOPATH/src/golang.org/x/mobile &&
-            chmod -R u+w \$GOPATH/src/golang.org/x/mobile &&
+              echo "=== unpack mobile sources ===" &&
+              MOBILE_VER=$(go list -m -json all | python3 /build/get_mobile_ver.py) &&
+              echo "mobile version: $MOBILE_VER" &&
+              mkdir -p $GOPATH/src/golang.org/x &&
+              cp -r $GOPATH/pkg/mod/golang.org/x/mobile@${MOBILE_VER} $GOPATH/src/golang.org/x/mobile &&
+              chmod -R u+w $GOPATH/src/golang.org/x/mobile &&
 
-            echo '=== gomobile init ===' &&
-            gomobile init &&
+              echo "=== gomobile init ===" &&
+              gomobile init &&
 
-            echo '=== gomobile bind ===' &&
-            gomobile bind \
-              -target=android/arm64 \
-              -androidapi 21 \
-              -ldflags \"-X xraymobile.appPackageName=\${PACKAGE_NAME}\" \
-              -o xraymobile.aar \
-              .
-          "
+              echo "=== gomobile bind ===" &&
+              gomobile bind \
+                -target=android/arm64 \
+                -androidapi 21 \
+                -ldflags "-X xraymobile.appPackageName=${PACKAGE_NAME}" \
+                -o xraymobile.aar \
+                .
+            '
+          echo "=== AAR size ==="
           du -sh xray-bridge/xraymobile.aar
 
       - name: Upload AAR
