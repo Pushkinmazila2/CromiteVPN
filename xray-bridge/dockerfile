@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV GOVERSION=1.23.1
+ENV GOVERSION=1.25.0
 ENV GOPATH=/root/go
 ENV GOPROXY=https://proxy.golang.org,https://goproxy.cn,direct
 ENV PATH=$PATH:/usr/local/go/bin:/root/go/bin

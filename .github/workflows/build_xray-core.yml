@@ -37,6 +37,7 @@ jobs:
 
       - name: Build Docker image
         run: |
+          sudo docker rmi xray-builder:latest || true
           sudo docker build -t xray-builder:latest xray-bridge/
 
       - name: Build Xray AAR
