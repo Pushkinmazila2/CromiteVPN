@@ -1,0 +1,43 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV GOVERSION=1.23.1
+ENV GOPATH=/root/go
+ENV GOPROXY=https://proxy.golang.org,https://goproxy.cn,direct
+ENV PATH=$PATH:/usr/local/go/bin:/root/go/bin
+ENV ANDROID_NDK_HOME=/android-ndk
+ENV ANDROID_HOME=/opt/android-sdk
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+# Базовые зависимости
+RUN apt-get update && apt-get install -y \
+    git curl wget unzip \
+    openjdk-17-jdk-headless \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Go
+RUN wget -q https://go.dev/dl/go${GOVERSION}.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go${GOVERSION}.linux-amd64.tar.gz \
+    && rm go${GOVERSION}.linux-amd64.tar.gz
+
+# Android NDK
+RUN wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip \
+    && unzip -q android-ndk-r25b-linux.zip \
+    && mv android-ndk-r25b /android-ndk \
+    && rm android-ndk-r25b-linux.zip
+
+# Android SDK
+RUN mkdir -p $ANDROID_HOME/cmdline-tools && \
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip && \
+    unzip -q sdk.zip -d $ANDROID_HOME/cmdline-tools && \
+    mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest && \
+    rm sdk.zip && \
+    yes | sdkmanager --licenses && \
+    sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+
+# gomobile — только бинарники, БЕЗ init
+RUN go install golang.org/x/mobile/cmd/gomobile@latest && \
+    go install golang.org/x/mobile/cmd/gobind@latest
+
+WORKDIR /build

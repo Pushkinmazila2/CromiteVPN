@@ -1,0 +1,67 @@
+name: Stage 1 - Build Xray AAR
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_suffix:
+        description: 'Package suffix (random if empty)'
+        required: false
+        default: ''
+
+jobs:
+  build-xray:
+    runs-on: self-hosted
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate package name
+        id: identity
+        run: |
+          SUFFIX="${{ inputs.package_suffix }}"
+          if [ -z "$SUFFIX" ]; then
+            SUFFIX=$(head -c 100 /dev/urandom | tr -dc 'a-z' | head -c 8)
+          fi
+          PACKAGE="com.${SUFFIX}.browser"
+          echo "package=${PACKAGE}" >> $GITHUB_OUTPUT
+          echo "Package: ${PACKAGE}"
+
+      - name: Build Docker image
+        run: |
+          sudo docker build -t xray-builder:latest xray-bridge/
+
+      - name: Build Xray AAR
+        run: |
+          sudo docker run --rm \
+            -v "$(pwd)/xray-bridge:/build" \
+            -e PACKAGE_NAME="${{ steps.identity.outputs.package }}" \
+            xray-builder:latest \
+            bash -c "
+              set -e
+              echo '=== go mod tidy ===' &&
+              go mod tidy &&
+              echo '=== gomobile init ===' &&
+              gomobile init &&
+              echo '=== gomobile bind ===' &&
+              gomobile bind \
+                -target=android/arm64 \
+                -androidapi 21 \
+                -ldflags \"-X xraymobile.appPackageName=\${PACKAGE_NAME}\" \
+                -o xraymobile.aar \
+                .
+            "
+          echo "=== AAR size ==="
+          du -sh xray-bridge/xraymobile.aar
+
+      - name: Upload AAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: xraymobile-aar
+          path: xray-bridge/xraymobile.aar
+          retention-days: 7
