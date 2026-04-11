@@ -93,13 +93,14 @@ jobs:
           retention-days: 7
       
       - name: Send Telegram notification
-        uses: appleboy/telegram-action@master
-        if: always() # Отправлять уведомление в любом случае (успех или провал)
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: |
-            Статус Action: ${{ job.status }}
-            Репозиторий: ${{ github.repository }}
-            Автор: ${{ github.actor }}
-            Подробнее: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}
+        if: always()
+        run: |
+          MESSAGE="Статус Action: ${{ job.status }}
+          Репозиторий: ${{ github.repository }}
+          Автор: ${{ github.actor }}
+          Подробнее: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          curl -s -X POST "https://telegram.org{{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
+            -d "text=$MESSAGE" \
+            -d "parse_mode=HTML"
