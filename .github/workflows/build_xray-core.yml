@@ -47,43 +47,31 @@ jobs:
             -e PACKAGE_NAME="${{ steps.identity.outputs.package }}" \
             xray-builder:latest \
             bash -c "
-              set -e
+            set -e
 
-              echo '=== ENV ===' &&
-              echo GOPATH=\$GOPATH &&
-              echo GOROOT=\$(go env GOROOT) &&
-              echo GOMODCACHE=\$(go env GOMODCACHE) &&
-              go version &&
-              gomobile version &&
+            echo '=== go mod tidy ===' &&
+            go mod tidy &&
 
-              echo '=== mobile/bind location ===' &&
-              find \$GOPATH -path '*/mobile/bind' -type d 2>/dev/null || echo 'NOT FOUND in GOPATH' &&
-              find /root -path '*/mobile/bind' -type d 2>/dev/null || echo 'NOT FOUND in /root' &&
+            echo '=== unpack mobile sources ===' &&
+            MOBILE_VER=\$(go list -m -f '{{.Version}}' golang.org/x/mobile) &&
+            echo \"mobile version: \$MOBILE_VER\" &&
+            go mod download golang.org/x/mobile &&
+            mkdir -p \$GOPATH/src/golang.org/x &&
+            cp -r \$GOPATH/pkg/mod/golang.org/x/mobile@\${MOBILE_VER} \$GOPATH/src/golang.org/x/mobile &&
+            chmod -R u+w \$GOPATH/src/golang.org/x/mobile &&
+            ls \$GOPATH/src/golang.org/x/mobile/bind &&
 
-              echo '=== go env ===' &&
-              go env &&
+            echo '=== gomobile init ===' &&
+            gomobile init &&
 
-              echo '=== go mod tidy ===' &&
-              go mod tidy &&
-
-              echo '=== mobile/bind after tidy ===' &&
-              find \$(go env GOMODCACHE) -path '*/mobile*/bind' -type d 2>/dev/null || echo 'still not found' &&
-
-              echo '=== gomobile init ===' &&
-              gomobile init -v &&
-
-              echo '=== mobile/bind after init ===' &&
-              find \$(go env GOMODCACHE) -path '*/mobile*/bind' -type d 2>/dev/null &&
-
-              echo '=== gomobile bind ===' &&
-              gomobile bind \
-                -target=android/arm64 \
-                -androidapi 21 \
-                -ldflags \"-X xraymobile.appPackageName=\${PACKAGE_NAME}\" \
-                -v \
-                -o xraymobile.aar \
-                .
-            "
+            echo '=== gomobile bind ===' &&
+            gomobile bind \
+              -target=android/arm64 \
+              -androidapi 21 \
+              -ldflags \"-X xraymobile.appPackageName=\${PACKAGE_NAME}\" \
+              -o xraymobile.aar \
+              .
+          "
           du -sh xray-bridge/xraymobile.aar
 
       - name: Upload AAR
