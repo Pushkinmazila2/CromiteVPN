@@ -29,7 +29,7 @@ func watchdog(ctx context.Context) {
 }
 
 func pingServer() bool {
-    // Проверяем что unix socket живой
+    // Check unix socket alive
     conn, err := net.DialTimeout(
         "unix",
         UnixSocketPath(),

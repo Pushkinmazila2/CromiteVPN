@@ -20,7 +20,7 @@ var (
     tunnelUpCb func(bool)
 )
 
-// StartXray запускает xray с переданным JSON конфигом
+// StartXray starts xray with provided JSON config
 func StartXray(configJSON string) error {
     mu.Lock()
     defer mu.Unlock()
@@ -45,7 +45,7 @@ func StartXray(configJSON string) error {
 
     instance = inst
 
-    // Запускаем watchdog
+    // Starting watchdog
     ctx, cancel := context.WithCancel(context.Background())
     cancelWatch = cancel
     go watchdog(ctx)
@@ -53,7 +53,7 @@ func StartXray(configJSON string) error {
     return nil
 }
 
-// StopXray останавливает xray
+// StopXray stops xray
 func StopXray() error {
     mu.Lock()
     defer mu.Unlock()
@@ -72,29 +72,29 @@ func StopXray() error {
     return err
 }
 
-// IsRunning возвращает статус
+// IsRunning returns current status
 func IsRunning() bool {
     mu.Lock()
     defer mu.Unlock()
     return instance != nil
 }
 
-// GetSocksPort возвращает порт SOCKS5
+// GetSocksPort returns SOCKS5 port
 func GetSocksPort() int {
     return socksPort
 }
 
-// GetSocksUser возвращает логин для SOCKS5
+// GetSocksUser returns SOCKS5 username
 func GetSocksUser() string {
     return socksUser
 }
 
-// GetSocksPass возвращает пароль для SOCKS5
+// GetSocksPass returns SOCKS5 password
 func GetSocksPass() string {
     return socksPass
 }
 
-// SetTunnelCallback устанавливает колбэк на изменение статуса туннеля
+// SetTunnelCallback sets tunnel status callback
 func SetTunnelCallback(cb func(bool)) {
     tunnelUpCb = cb
 }

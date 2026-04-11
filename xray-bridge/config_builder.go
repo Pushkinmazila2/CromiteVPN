@@ -8,13 +8,13 @@ import (
 
 
 
-// Profile — профиль подключения
+// Profile - connection profile
 type Profile struct {
     Type      string // vless, vmess, trojan, shadowsocks
     Address   string
     Port      int
-    UUID      string // для vless/vmess/trojan
-    Password  string // для shadowsocks/trojan
+    UUID      string // for vless/vmess/trojan
+    Password  string // for shadowsocks/trojan
     Transport string // tcp, ws, grpc, reality
     TLS       TLSConfig
     Name      string
@@ -29,14 +29,14 @@ type TLSConfig struct {
     ShortID    string
 }
 
-// Инжектируется при сборке через -ldflags
+
 var appPackageName = "com.example.browser"
 
 func AppPackageName() string {
     return appPackageName
 }
 
-// BuildConfig генерирует xray JSON конфиг
+// BuildConfig generates xray JSON config
 func BuildConfig(profile Profile) (string, error) {
     port, err := randomPort()
     if err != nil {
@@ -177,8 +177,7 @@ func buildPolicy() map[string]interface{} {
     }
 }
 
-// UnixSocketPath возвращает путь к unix socket
-// Вызывается из Kotlin для передачи в Chromium
+// UnixSocketPath returns unix socket path
 func UnixSocketPath() string {
     return "/data/data/" + AppPackageName() + "/files/xray.sock"
 }
@@ -250,7 +249,7 @@ func buildShadowsocks(p Profile) map[string]interface{} {
                 map[string]interface{}{
                     "address":  p.Address,
                     "port":     p.Port,
-                    "method":   p.TLS.SNI, // переиспользуем поле под cipher
+                    "method":   p.TLS.SNI,
                     "password": p.Password,
                 },
             },
