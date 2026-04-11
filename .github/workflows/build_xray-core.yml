@@ -45,21 +45,38 @@ jobs:
             bash -c "
               set -e
 
-              echo '=== get mobile sources ===' &&
-              go get golang.org/x/mobile/cmd/gomobile &&
-              go get golang.org/x/mobile/bind &&
+              echo '=== ENV ===' &&
+              echo GOPATH=\$GOPATH &&
+              echo GOROOT=\$(go env GOROOT) &&
+              echo GOMODCACHE=\$(go env GOMODCACHE) &&
+              go version &&
+              gomobile version &&
+
+              echo '=== mobile/bind location ===' &&
+              find \$GOPATH -path '*/mobile/bind' -type d 2>/dev/null || echo 'NOT FOUND in GOPATH' &&
+              find /root -path '*/mobile/bind' -type d 2>/dev/null || echo 'NOT FOUND in /root' &&
+
+              echo '=== go env ===' &&
+              go env &&
 
               echo '=== go mod tidy ===' &&
               go mod tidy &&
 
+              echo '=== mobile/bind after tidy ===' &&
+              find \$(go env GOMODCACHE) -path '*/mobile*/bind' -type d 2>/dev/null || echo 'still not found' &&
+
               echo '=== gomobile init ===' &&
-              gomobile init &&
+              gomobile init -v &&
+
+              echo '=== mobile/bind after init ===' &&
+              find \$(go env GOMODCACHE) -path '*/mobile*/bind' -type d 2>/dev/null &&
 
               echo '=== gomobile bind ===' &&
               gomobile bind \
                 -target=android/arm64 \
                 -androidapi 21 \
                 -ldflags \"-X xraymobile.appPackageName=\${PACKAGE_NAME}\" \
+                -v \
                 -o xraymobile.aar \
                 .
             "
