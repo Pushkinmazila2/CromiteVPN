@@ -99,8 +99,7 @@ jobs:
           Репозиторий: ${{ github.repository }}
           Автор: ${{ github.actor }}
           Подробнее: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
-          curl -s -X POST "https://telegram.org{{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+
+          curl -s -X POST "http://${{ secrets.MYSECRET_IP}}:8080/${{ secrets.MYSECRET_WAY }}/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
             -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
-            -d "text=$MESSAGE" \
-            -d "parse_mode=HTML"
+            -d "text=Action status: ${{ job.status }}"
