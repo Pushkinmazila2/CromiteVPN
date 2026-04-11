@@ -100,6 +100,4 @@ jobs:
           Автор: ${{ github.actor }}
           Подробнее: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          curl -s -X POST "http://${{ secrets.MYSECRET_IP}}:8181/${{ secrets.MYSECRET_WAY }}/${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
-            -d "text=Action status: ${{ job.status }}"
+          curl -s -X POST "http://${{ secrets.MYSECRET_IP}}:8080/${{ secrets.MYSECRET_WAY }}/${{ secrets.TELEGRAM_TOKEN }}/sendMessage"  -d "chat_id=${{ secrets.TELEGRAM_TO }}"  -d "text=Action status: ${{ job.status }}"
