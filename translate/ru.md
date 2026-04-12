@@ -41,8 +41,8 @@
 - [ ] **Custom SNI Management:** Удобный интерфейс для смены маскировочных доменов.
 
 ## Credits
-* [Cromite Project](https://github.com) — за лучшую базу для приватного браузинга.
-* [Project Xray (Xray-core)](https://github.com) — за мощный сетевой движок.
+* [Cromite Project](https://github.com/uazo/cromite) — за лучшую базу для приватного браузинга.
+* [Project Xray (Xray-core)](https://github.com/xtls/xray-core) — за мощный сетевой движок.
 
 
 ## ⚠️ Дисклеймер
