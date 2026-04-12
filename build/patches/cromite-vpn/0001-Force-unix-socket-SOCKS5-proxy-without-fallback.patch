@@ -1,0 +1,95 @@
+From cccce9b6cdaba9eaf50301468badd6836bda0775 Mon Sep 17 00:00:00 2001
+From: MY Name <you@example.com>
+Date: Sat, 11 Apr 2026 22:33:42 +0000
+Subject: [PATCH] Force unix socket SOCKS5 proxy without fallback
+
+---
+ chrome/browser/net/proxy_service_factory.cc | 59 +++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
+
+diff --git a/chrome/browser/net/proxy_service_factory.cc b/chrome/browser/net/proxy_service_factory.cc
+index f04d0268a2..a1073e0e96 100644
+--- a/chrome/browser/net/proxy_service_factory.cc
++++ b/chrome/browser/net/proxy_service_factory.cc
+@@ -17,6 +17,10 @@
+ #include "components/proxy_config/proxy_config_pref_names.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/prefs/pref_registry_simple.h"
++#include "base/files/file_util.h"
++#include "base/json/json_reader.h"
++#include "net/proxy_resolution/proxy_config_service_fixed.h"
++#include "net/traffic_annotation/network_traffic_annotation.h"
+
+ #if BUILDFLAG(IS_CHROMEOS)
+ #include "chromeos/ash/components/network/proxy/proxy_config_service_impl.h"
+@@ -24,6 +28,56 @@
+
+ using content::BrowserThread;
+
++namespace {
++
++struct XrayCredentials {
++  std::string socket_path;
++  std::string user;
++  std::string pass;
++  bool valid() const { return !socket_path.empty(); }
++};
++
++XrayCredentials ReadXrayCredentials() {
++  base::FilePath path(XRAY_CREDENTIALS_PATH);
++  std::string contents;
++  if (!base::ReadFileToString(path, &contents)) return {};
++  auto parsed = base::JSONReader::Read(contents);
++  if (!parsed || !parsed->is_dict()) return {};
++  const auto& d = parsed->GetDict();
++  XrayCredentials c;
++  if (auto* s = d.FindString("socket")) c.socket_path = *s;
++  if (auto* u = d.FindString("user"))   c.user = *u;
++  if (auto* p = d.FindString("pass"))   c.pass = *p;
++  base::DeleteFile(path);
++  return c;
++}
++
++std::unique_ptr<net::ProxyConfigService> CreateXrayProxyService(
++    const XrayCredentials& creds) {
++  net::ProxyConfig config;
++  std::string proxy_uri = "socks5://" + creds.user + ":" +
++                          creds.pass + "@" + creds.socket_path;
++  config.proxy_rules().ParseFromString(proxy_uri);
++  auto annotation = net::DefineNetworkTrafficAnnotation(
++      "xray_forced_proxy", R"(
++        semantics {
++          sender: "XrayVPN"
++          description: "Forced SOCKS5 proxy for all browser traffic"
++          trigger: "On browser start when xray credentials are present"
++          data: "All browser traffic routed through xray tunnel"
++          destination: OTHER
++        }
++        policy {
++          cookies_allowed: YES
++          setting: "Cannot be disabled by user"
++          policy_exception_justification: "Required for VPN functionality"
++        })");
++  return std::make_unique<net::ProxyConfigServiceFixed>(
++      net::ProxyConfigWithAnnotation(config, annotation));
++}
++
++} // namespace
++
+ // static
+ std::unique_ptr<net::ProxyConfigService>
+ ProxyServiceFactory::CreateProxyConfigService(PrefProxyConfigTracker* tracker,
+@@ -49,6 +103,11 @@ ProxyServiceFactory::CreateProxyConfigService(PrefProxyConfigTracker* tracker,
+       base::SingleThreadTaskRunner::GetCurrentDefault());
+ #endif  // !BUILDFLAG(IS_CHROMEOS)
+
++  // If xray credentials present - force our proxy, no fallback to system
++  auto creds = ReadXrayCredentials();
++  if (creds.valid()) {
++    return CreateXrayProxyService(creds);
++  }
+   return tracker->CreateTrackingProxyConfigService(std::move(base_service));
+ }
+
+--
+2.25.1
