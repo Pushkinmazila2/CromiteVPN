@@ -1,4 +1,4 @@
-name: Stage 1 - Build Xray AAR
+name: Stage 2 - Build Xray AAR
 
 permissions:
   contents: write

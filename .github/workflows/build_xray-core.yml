@@ -24,10 +24,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Send notification
-        run: echo "Job ID: ${{ github.job }} | Status: ${{ job.status }}"
-
-
       - name: Generate package name
         id: identity
         run: |
@@ -89,7 +85,7 @@ jobs:
           Автор: ${{ github.actor }}
           Подробнее: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          curl -s -X POST "http://${{ secrets.MYSECRET_IP}}:8080/${{ secrets.MYSECRET_WAY }}/${{ secrets.TELEGRAM_TOKEN }}/sendMessage"  -d "chat_id=${{ secrets.TELEGRAM_TO }}"  -d "text=Job ID: ${{ github.job }} | Status: ${{ job.status }}"
+          curl -s -X POST "http://${{ secrets.MYSECRET_IP}}:8080/${{ secrets.MYSECRET_WAY }}/${{ secrets.TELEGRAM_TOKEN }}/sendMessage"  -d "chat_id=${{ secrets.TELEGRAM_TO }}"  -d "text=Job ID: ${{ github.job }}  Status: ${{ job.status }}"
 
       - name: Upload AAR
         uses: actions/upload-artifact@v4
@@ -181,4 +177,4 @@ jobs:
           Автор: ${{ github.actor }}
           Подробнее: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          curl -s -X POST "http://${{ secrets.MYSECRET_IP}}:8080/${{ secrets.MYSECRET_WAY }}/${{ secrets.TELEGRAM_TOKEN }}/sendMessage"  -d "chat_id=${{ secrets.TELEGRAM_TO }}"  -d "text=Job ID: ${{ github.job }} | Status: ${{ job.status }}"
+          curl -s -X POST "http://${{ secrets.MYSECRET_IP}}:8080/${{ secrets.MYSECRET_WAY }}/${{ secrets.TELEGRAM_TOKEN }}/sendMessage"  -d "chat_id=${{ secrets.TELEGRAM_TO }}"  -d "text=Action status: ${{ job.status }}"
