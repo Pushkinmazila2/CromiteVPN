@@ -138,6 +138,10 @@ jobs:
           sudo docker run --rm \
             -v "$(pwd):/cromite-vpn" \
             -e PACKAGE_NAME="${{ needs.build-xray.outputs.package }}" \
+            -e http_proxy= \
+            -e https_proxy= \
+            -e HTTP_PROXY= \
+            -e HTTPS_PROXY= \
             ${CROMITE_IMAGE} \
             bash -c '
               set -e
