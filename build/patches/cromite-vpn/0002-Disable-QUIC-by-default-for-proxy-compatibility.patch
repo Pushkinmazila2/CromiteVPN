@@ -1,0 +1,24 @@
+From c39d481778a3ce7abc76280d3b2c1a64155d9d66 Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Sun, 12 Apr 2026 15:42:10 +0000
+Subject: [PATCH 1/2] Disable QUIC by default for proxy compatibility
+
+---
+ net/http/http_network_session.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/http/http_network_session.h b/net/http/http_network_session.h
+index edc530f95b..8e5bcbd75c 100644
+--- a/net/http/http_network_session.h
++++ b/net/http/http_network_session.h
+@@ -138,7 +138,7 @@ struct NET_EXPORT HttpNetworkSessionParams {
+   bool enable_early_data;
+
+   // Enables QUIC support.
+-  bool enable_quic = true;
++  bool enable_quic = false; // CromiteVPN: disabled for proxy compatibility
+
+   // If non-empty, QUIC will only be spoken to hosts in this list.
+   base::flat_set<std::string> quic_host_allowlist;
+--
+2.25.1

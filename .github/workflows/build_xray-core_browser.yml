@@ -1,0 +1,92 @@
+name: Stage 1 - Build Xray AAR
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_suffix:
+        description: 'Package suffix (random if empty)'
+        required: false
+        default: ''
+  push:
+    paths:
+      - '.github/workflows/build_xray-core.yml'
+
+jobs:
+  build-cromite:
+    needs: build-xray
+    runs-on: self-hosted
+    timeout-minutes: 480
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download xray AAR
+        uses: actions/download-artifact@v4
+        with:
+          name: xraymobile-aar
+          path: xray-bridge/
+
+      - name: Pull cromite-build image
+        run: |
+          IMAGE="uazo/cromite-build:145.0.7632.120-d133d52d09c925b6542ff00e368d18d74df85e7c"
+          sudo docker pull ${IMAGE}
+          echo "CROMITE_IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      - name: Build Cromite with patches
+        run: |
+          sudo docker run --rm \
+            -v "$(pwd):/cromite-vpn" \
+            -e PACKAGE_NAME="${{ needs.prepare.outputs.package }}" \
+            ${CROMITE_IMAGE} \
+            bash -c '
+              set -e
+              WORKSPACE=/home/lg/working_dir
+              CHROMIUM=$WORKSPACE/chromium/src
+
+              echo "=== Apply VPN patches ===" &&
+              cd $CHROMIUM &&
+              for patch in /cromite-vpn/build/patches/cromite-vpn/*.patch; do
+                echo "Applying: $(basename $patch)" &&
+                git am "$patch" || {
+                  echo "FAILED: $patch"
+                  git am --abort
+                  exit 1
+                }
+              done &&
+
+              echo "=== Copy Xray AAR ===" &&
+              mkdir -p $CHROMIUM/chrome/android/libs &&
+              cp /cromite-vpn/xray-bridge/xraymobile.aar \
+                $CHROMIUM/chrome/android/libs/ &&
+
+              echo "=== GN gen ===" &&
+              PATH=$WORKSPACE/chromium/src/third_party/llvm-build/Release+Asserts/bin:$WORKSPACE/depot_tools:/usr/local/go/bin:$PATH &&
+              gn gen --args="
+                target_os=\"android\"
+                $(cat $WORKSPACE/cromite/build/cromite.gn_args)
+                target_cpu=\"arm64\"
+                android_package_name=\"${PACKAGE_NAME}\"
+              " out/arm64 &&
+
+              echo "=== Build ===" &&
+              vpython3 $WORKSPACE/depot_tools/siso.py ninja \
+                -C out/arm64 \
+                chrome_public_apk \
+                --offline &&
+
+              echo "=== Copy APK ===" &&
+              cp out/arm64/apks/ChromePublic.apk /cromite-vpn/ChromePublic.apk &&
+              echo "BUILD SUCCESS"
+            '
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cromite-vpn-apk
+          path: ChromePublic.apk
+          retention-days: 7

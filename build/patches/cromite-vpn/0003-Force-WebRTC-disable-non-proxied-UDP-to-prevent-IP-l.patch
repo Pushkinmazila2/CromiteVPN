@@ -1,0 +1,27 @@
+From 2cb374d948f3f0537cef065e420ccafd9e8dff5e Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Sun, 12 Apr 2026 15:42:31 +0000
+Subject: [PATCH 2/2] Force WebRTC disable non-proxied UDP to prevent IP leaks
+
+---
+ chrome/browser/renderer_preferences_util.cc | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/chrome/browser/renderer_preferences_util.cc b/chrome/browser/renderer_preferences_util.cc
+index fa5758e1d4..7e1c33e0fe 100644
+--- a/chrome/browser/renderer_preferences_util.cc
++++ b/chrome/browser/renderer_preferences_util.cc
+@@ -157,8 +157,9 @@ void UpdateFromSystemSettings(blink::RendererPreferences* prefs,
+       pref_service->GetBoolean(prefs::kEnableGPC);
+   prefs->enable_encrypted_media =
+       pref_service->GetBoolean(prefs::kEnableEncryptedMedia);
+-  prefs->webrtc_ip_handling_policy = blink::ToWebRTCIPHandlingPolicy(
+-      pref_service->GetString(prefs::kWebRTCIPHandlingPolicy));
++  // CromiteVPN: force disable non-proxied UDP to prevent IP leaks
++  prefs->webrtc_ip_handling_policy =
++      blink::mojom::WebRtcIpHandlingPolicy::kDisableNonProxiedUdp;
+
+   for (const base::Value& entry :
+        pref_service->GetList(prefs::kWebRTCIPHandlingUrl)) {
+--
+2.25.1
